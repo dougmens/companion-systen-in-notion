@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  com.user.notionsync.plist
+  LaunchAgent for Notion Sync dry-run.
+
+  Installation:
+    cp launchd/com.user.notionsync.plist ~/Library/LaunchAgents/
+    launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.user.notionsync.plist
+
+  Reload after editing:
+    launchctl bootout  gui/$(id -u) ~/Library/LaunchAgents/com.user.notionsync.plist
+    launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.user.notionsync.plist
+
+  CRITICAL: Every argument must be its own <string> element inside
+  ProgramArguments.  Putting multiple tokens in one <string> causes launchd
+  to pass the whole thing as a single argv token, which the shell then tries
+  to execute as a command – producing the "sh: --registry: command not found"
+  error this plist was fixed to eliminate.
+-->
+<plist version="1.0">
+<dict>
+
+    <!-- Unique service label – must match the filename. -->
+    <key>Label</key>
+    <string>com.user.notionsync</string>
+
+    <!--
+      ProgramArguments: each token is a SEPARATE <string>.
+      [0] = the program to run (the shell launcher).
+      [1] = first argument flag.
+      [2] = first argument value.
+      launchd does NOT perform shell expansion here – paths must be absolute.
+
+      Adjust REPO_ROOT to the absolute path of your checkout, e.g.
+        /Users/yourname/companion-systen-in-notion
+    -->
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Users/yourname/companion-systen-in-notion/notion_sync_launchagent.sh</string>
+        <string>--registry</string>
+        <string>/Users/yourname/companion-systen-in-notion/config/notion_sync_registry.json</string>
+    </array>
+
+    <!--
+      EnvironmentVariables: injected into the process environment before exec.
+      Use NOTION_PYTHON if python3 is not on the default launchd PATH
+      (launchd's PATH is /usr/bin:/bin:/usr/sbin:/sbin – it does NOT inherit
+      your shell's PATH or pyenv/conda shims).
+    -->
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>NOTION_PYTHON</key>
+        <string>/usr/bin/python3</string>
+        <!-- Uncomment to enable debug logging without changing code:
+        <key>DEBUG</key>
+        <string>1</string>
+        -->
+    </dict>
+
+    <!-- Run once a day at 08:00 local time. -->
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>8</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <!--
+      Log files: absolute paths.  The logs directory must exist before
+      launchd starts the job.  Create it with: mkdir -p ~/Library/Logs/NotionSync
+    -->
+    <key>StandardOutPath</key>
+    <string>/Users/yourname/Library/Logs/NotionSync/notion_sync.stdout.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/yourname/Library/Logs/NotionSync/notion_sync.stderr.log</string>
+
+    <!-- Restart on crash (not on clean exit code 0). -->
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+    </dict>
+
+    <!-- Run as the logged-in user (LaunchAgent default). -->
+    <key>RunAtLoad</key>
+    <false/>
+
+</dict>
+</plist>

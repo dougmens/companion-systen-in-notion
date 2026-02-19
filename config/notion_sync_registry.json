@@ -1,0 +1,10 @@
+{
+  "version": "1.0",
+  "databases": [
+    {
+      "id": "example-database-id",
+      "name": "My Notion Database",
+      "sync_enabled": true
+    }
+  ]
+}
