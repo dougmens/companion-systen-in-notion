@@ -1,0 +1,61 @@
+# render.yaml – Render deployment descriptor for the Companion MCP server.
+#
+# SETUP INSTRUCTIONS
+# ------------------
+# 1. Connect this repo to Render (New → Web Service → connect GitHub repo).
+# 2. Render auto-detects this file.
+# 3. In Render dashboard → Environment, set the secret env vars marked
+#    sync: false below (never commit real values to this file).
+# 4. Render will build, deploy, and health-check automatically.
+#
+# HEALTH CHECK
+# ------------
+# Render probes GET /health.  The route is unauthenticated by design.
+# Expected response: HTTP 200  {"ok": true, ...}
+#
+# AUTH HEADERS ACCEPTED ON PROTECTED ROUTES
+# ------------------------------------------
+#   x-api-key        (primary; used by external callers)
+#   x-internal-key   (alias; used by internal services)
+# Both are checked against the single MCP_API_KEY env var value.
+
+services:
+  - type: web
+    name: chatgpt-companion-system
+    runtime: python
+    region: oregon           # match your existing Render region
+    plan: free               # change to starter/standard for production SLA
+
+    # Render sets the repo root as the working directory.
+    # No rootDir needed unless this file is in a subdirectory.
+
+    buildCommand: pip install -r server/requirements.txt
+
+    # $PORT is injected by Render.  Never hard-code a port here.
+    startCommand: uvicorn server.main:app --host 0.0.0.0 --port $PORT
+
+    # Render health-check: must return 200 within the timeout window.
+    healthCheckPath: /health
+
+    envVars:
+      # ----------------------------------------------------------------
+      # REQUIRED SECRET – set via Render dashboard, never committed here.
+      # Protected routes (POST /mcp, POST /mcp/intent) reject requests
+      # that don't carry this value in x-api-key or x-internal-key.
+      # ----------------------------------------------------------------
+      - key: MCP_API_KEY
+        sync: false          # prompt for value in Render dashboard
+
+      # ----------------------------------------------------------------
+      # Optional alias – leave unset if you only use MCP_API_KEY.
+      # ----------------------------------------------------------------
+      # - key: INTERNAL_API_KEY
+      #   sync: false
+
+      # ----------------------------------------------------------------
+      # Python / uvicorn tuning (safe defaults; adjust as needed).
+      # ----------------------------------------------------------------
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: LOG_LEVEL
+        value: info
