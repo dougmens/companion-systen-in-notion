@@ -57,6 +57,12 @@ def _build_parser() -> argparse.ArgumentParser:
         default=os.environ.get("DEBUG", "0") == "1",
         help="Enable debug logging (also activated by DEBUG=1 env var).",
     )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        dest="dry_run",
+        help="Preview sync plan without writing any changes (always true for this script).",
+    )
     return parser
 
 
@@ -116,10 +122,17 @@ def main() -> None:
     )
 
     # ------------------------------------------------------------------
-    # Dry-run body – placeholder for real Notion API calls.
-    # Replace this section with actual sync logic; do NOT touch the
-    # argument-handling or logging above.
+    # Dry-run PLAN output.
     # ------------------------------------------------------------------
+    if args.dry_run:
+        log.info("--dry-run active: previewing sync plan only.")
+
+    print("PLAN")
+    print("----")
+    for db in registry.get("databases", []):
+        status = "SYNC" if db.get("sync_enabled") else "SKIP"
+        print(f"  [{status}] {db.get('name', db.get('id', '?'))}  (id={db.get('id', '?')})")
+    print("----")
     log.info("Dry-run complete – no changes written.")
 
 
